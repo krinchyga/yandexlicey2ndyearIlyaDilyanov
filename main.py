@@ -1,8 +1,10 @@
 import sys
 
 from PyQt5 import uic  # Импортируем uic
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QListView
+from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtCore import QStringListModel
+import sqlite3
 
 
 class MyWidget(QMainWindow):
@@ -55,6 +57,7 @@ class MyWidget(QMainWindow):
             self.place = "По стране"
         else:
             self.temp = "Тепло"
+            self.open_form()
 
     def button_right(self):
         if self.ButtonRight.text() == "Мужской":
@@ -71,14 +74,15 @@ class MyWidget(QMainWindow):
             self.place = "За границу"
         else:
             self.temp = "Холодно"
+            self.open_form()
 
     def button_centre(self):
         if self.ButtonCentre.text() == "Месяц":
             self.second_ans()
-            self.pol = "Месяц"
+            self.time = "Месяц"
         else:
             self.third_ans()
-            self.time = "Активный отдых"
+            self.type = "Активный отдых"
 
     def first_ans(self):
         self.next_label()
@@ -103,6 +107,47 @@ class MyWidget(QMainWindow):
         self.next_label()
         self.ButtonLeft.setText('Тепло')
         self.ButtonRight.setText('Холодно')
+
+    def open_form(self):
+        self.window = QDialog()
+        self.window.setFixedSize(500, 700)
+        self.window.setFont(QFont("MS Shell Dlg 2", 18))
+        self.window.setWindowIcon(QIcon('takeoff.ico'))
+        self.window.setWindowTitle('Список вещей')
+        con = sqlite3.connect("List.db")
+        cur = con.cursor()
+        if self.pol == "Мужской":
+            pol = cur.execute("""SELECT Мужской FROM Pol""").fetchall()
+        else:
+            pol = cur.execute("""SELECT Женский FROM Pol""").fetchall()
+        if self.time == "Неделя":
+            time = cur.execute("""SELECT Неделя FROM Dlitelnost""").fetchall()
+        elif self.time == "2 Недели":
+            time = cur.execute("""SELECT двеНедели FROM Dlitelnost""").fetchall()
+        else:
+            time = cur.execute("""SELECT Месяц FROM Dlitelnost""").fetchall()
+        if self.type == "Активный отдых":
+            typ = cur.execute("""SELECT Активныйотдых FROM Type""").fetchall()
+        elif self.type == "Отдых на пляжу":
+            typ = cur.execute("""SELECT Отдыхнапляжу FROM Type""").fetchall()
+        else:
+            typ = cur.execute("""SELECT Командировка FROM Type""").fetchall()
+        if self.place == "По стране":
+            place = cur.execute("""SELECT Постране FROM Kuda""").fetchall()
+        else:
+            place = cur.execute("""SELECT Заграницу FROM Kuda""").fetchall()
+        if self.temp == "Тепло":
+            temp = cur.execute("""SELECT Тепло FROM Temper""").fetchall()
+        else:
+            temp = cur.execute("""SELECT Холодно FROM Temper""").fetchall()
+        items = list(filter(lambda x: x, map(lambda x: x[0], pol + time + typ + place + temp)))
+        self.lst = QListView(self.window)
+        self.lst.resize(480, 650)
+        self.lst.move(10, 10)
+        self.model = QStringListModel(self.window)
+        self.model.setStringList(items)
+        self.lst.setModel(self.model)
+        self.window.show()
 
 
 if __name__ == '__main__':
